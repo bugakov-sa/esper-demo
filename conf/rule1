@@ -1,10 +1,25 @@
+/*
+Паттерн для выявления случаев ложной тревоги
+Исходные данные:
+- события из tsdb
+Находит пары событий Тревога, такие что
+- у первого on = 1
+- у второго on = 0
+- события из одной зоны
+- время событий отличается не больше, чем на 5 секунд
+На выходе паттерна записи из следующих полей:
+- зона
+- время срабатывания on = 1
+- время срабатывания on = 0
+*/
 insert into FalseAlarm
     select
         a.args('zone') as zone,
         a.time as t1,
         b.time as t2
     from pattern[
-        every a=Event -> every b=Event(
+        every a = Event(id = 1) -> every b = Event(
+            id = 1 and
             args('zone') = a.args('zone') and
             time - a.time < 5 and
             args('alarm') = 0 and

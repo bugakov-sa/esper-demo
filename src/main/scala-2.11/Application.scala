@@ -9,6 +9,8 @@ import scala.io.Source
 
 case class Event(@BeanProperty time: Long, @BeanProperty id: Long, @BeanProperty args: java.util.Map[String, java.lang.Object])
 
+case class Schedule(@BeanProperty start: Long, @BeanProperty end: Long, @BeanProperty name: String)
+
 object Application extends App {
 
   def event(id: Long, time: Long, args: Map[String, AnyRef]) = {
@@ -30,6 +32,11 @@ object Application extends App {
     event(1, 123, Map("zone" -> zone1, "alarm" -> off))
   )
 
+  val schedule = Seq(
+    Schedule(0, 100, "Ivanov I.I."),
+    Schedule(100, 200, "Petrov P.P.")
+  )
+
   val log = Logger("Application")
   log.info("Started")
 
@@ -38,11 +45,12 @@ object Application extends App {
 
   val engine = EPServiceProviderManager.getProvider("demo", conf)
 
-  val n = 2
-
-  def ruleText(i: Int) = Source.fromFile(Paths.get(System.getProperty("user.dir"), "conf", "rule" + i).toFile).mkString
-
-  val stmts = for (i <- 1 to n) yield engine.getEPAdministrator.createEPL(ruleText(i))
+  val stmts = Paths.get(System.getProperty("user.dir"), "conf").toFile.
+    listFiles.
+    filter(_.getName.startsWith("rule")).
+    sortBy(_.getName).
+    map(Source.fromFile(_).mkString).
+    map(engine.getEPAdministrator.createEPL(_))
 
   stmts.last.addListenerWithReplay(new UpdateListener {
     override def update(newEvents: Array[EventBean], oldEvents: Array[EventBean]) = {
