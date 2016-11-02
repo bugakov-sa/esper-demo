@@ -1,0 +1,13 @@
+insert into FalseAlert
+    select
+        a.zone as zone,
+        a.time as t1,
+        b.time as t2
+    from pattern[
+        every a=AlertEvent -> every b=AlertEvent(
+            zone = a.zone and
+            time - a.time < 2 and
+            not isTrue and
+            a.isTrue
+        )
+    ]

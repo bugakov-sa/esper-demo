@@ -1,0 +1,7 @@
+select
+    zone,
+    count(*)
+from
+    FalseAlert
+group by
+    zone
