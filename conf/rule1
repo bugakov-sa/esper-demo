@@ -1,13 +1,13 @@
-insert into FalseAlert
+insert into FalseAlarm
     select
-        a.zone as zone,
+        a.args('zone') as zone,
         a.time as t1,
         b.time as t2
     from pattern[
-        every a=AlertEvent -> every b=AlertEvent(
-            zone = a.zone and
-            time - a.time < 2 and
-            not isTrue and
-            a.isTrue
+        every a=Event -> every b=Event(
+            args('zone') = a.args('zone') and
+            time - a.time < 5 and
+            args('alarm') = 0 and
+            a.args('alarm') = 1
         )
     ]

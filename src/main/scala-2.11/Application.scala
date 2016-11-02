@@ -1,20 +1,40 @@
 import java.nio.file.Paths
+import java.util
 
 import com.espertech.esper.client._
 import com.typesafe.scalalogging.Logger
 
 import scala.beans.BeanProperty
-import scala.collection.immutable.IndexedSeq
 import scala.io.Source
 
-case class Alert(@BeanProperty val time: Long, @BeanProperty zone: Long, @BeanProperty val isTrue: Boolean)
+case class Event(@BeanProperty time: Long, @BeanProperty id: Long, @BeanProperty args: java.util.Map[String, java.lang.Object])
 
 object Application extends App {
+
+  def event(id: Long, time: Long, args: Map[String, AnyRef]) = {
+    val res = Event(time, id, new util.HashMap[String, java.lang.Object]())
+    for ((k, v) <- args) {
+      res.args.put(k, v.asInstanceOf[java.lang.Object])
+    }
+    res
+  }
+
+  val zone1 = 1.asInstanceOf[AnyRef]
+  val on = 1.asInstanceOf[AnyRef]
+  val off = 0.asInstanceOf[AnyRef]
+
+  val events = Seq(
+    event(1, 100, Map("zone" -> zone1, "alarm" -> on)),
+    event(1, 102, Map("zone" -> zone1, "alarm" -> off)),
+    event(1, 110, Map("zone" -> zone1, "alarm" -> on)),
+    event(1, 123, Map("zone" -> zone1, "alarm" -> off))
+  )
+
   val log = Logger("Application")
   log.info("Started")
 
   val conf = new Configuration
-  conf.addEventType("AlertEvent", classOf[Alert])
+  conf.addEventType("Event", classOf[Event])
 
   val engine = EPServiceProviderManager.getProvider("demo", conf)
 
@@ -30,10 +50,7 @@ object Application extends App {
     }
   })
 
-  engine.getEPRuntime.sendEvent(Alert(0, 1, true))
-  engine.getEPRuntime.sendEvent(Alert(1, 1, false))
-  engine.getEPRuntime.sendEvent(Alert(4, 1, true))
-  engine.getEPRuntime.sendEvent(Alert(9, 1, false))
+  events.foreach(engine.getEPRuntime.sendEvent(_))
 
   log.info("Terminated")
 }
